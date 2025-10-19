@@ -106,4 +106,6 @@
    #:featurep
    #:with-shuffling
    #:*status-indicators*
-   #:status-character))
+   #:status-character
+   #:print-oneline
+   #:print-object-oneline))

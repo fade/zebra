@@ -68,6 +68,14 @@
   #+sbcl (sb-ext:package-locked-p package)
   #-sbcl (eql (find-package :cl) package))
 
+(defgeneric print-object-oneline (object stream))
+
+(defmethod print-object-oneline ((thing condition) output)
+  (format output "[~a] ~a" (type-of thing) thing))
+
+(defmethod print-object-oneline (thing output)
+  (princ thing output))
+
 (defun print-oneline (thing &optional (output T))
   (let ((*print-case* :downcase))
     (typecase output
@@ -108,10 +116,8 @@
                    (when (< i (1- (length thing)))
                      (format output " ")))
           (format output ")"))
-         (condition
-          (format output "[~a] ~a" (type-of thing) thing))
          (T
-          (princ thing output)))))))
+          (print-object-oneline thing output)))))))
 
 (defun geq (value expected)
   (if expected
