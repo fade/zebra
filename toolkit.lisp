@@ -183,6 +183,7 @@
   (getf *status-indicators* status "?"))
 
 (defun quit (code)
+  (finish-output *error-output*)
   (finish-output *standard-output*)
   #+(or abcl xcl) (ext:quit :status code)
   #+allegro (excl:exit code :quiet T)

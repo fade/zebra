@@ -32,8 +32,13 @@
         (quit (if (eql :failed (status report)) 100 0))))))
 
 (defun test-toplevel (designator/s &rest args)
-  (let ((failure NIL))
-    (loop for test in (if (listp designator/s) designator/s (list designator/s))
+  (let ((failure NIL)
+        (tests (if (listp designator/s) designator/s (list designator/s))))
+    (unless tests
+      (format T "~&No tests to run!")
+      (quit 1))
+    (format T "~&Running tests for the following:~%~{  - ~a~%~}" tests)
+    (loop for test in tests
           for report = (apply #'test test args)
           do (when (eql :failed (status report))
                (setf failure T)))
