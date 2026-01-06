@@ -1,0 +1,12 @@
+when:
+  event: [manual]
+steps:
+  publish:
+    image: woodpeckerci/plugin-docker-buildx:6
+    settings:
+      repo: shinmera/parachute
+      platforms: linux/amd64
+      tags: latest
+      username: ${CI_REPO_OWNER}
+      password:
+        from_secret: docker_registry_password
