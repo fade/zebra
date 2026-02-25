@@ -5,9 +5,17 @@ steps:
   publish:
     image: woodpeckerci/plugin-docker-buildx:6
     settings:
-      repo: shinmera/parachute
       platforms: linux/amd64
-      tags: latest
-      username: ${CI_REPO_OWNER}
-      password:
-        from_secret: docker_registry_password
+      repo: codeberg.org/shinmera/parachute,shinmera/parachute
+      auto_tag: true
+      logins:
+        - registry: https://codeberg.org/v2/
+          repo: codeberg.org/shinmera/parachute
+          username: shinmera
+          password:
+            from_secret: codeberg_registry_password
+        - registry:  https://index.docker.io/v1/
+          repo: shinmera/parachute
+          username: shinmera
+          password:
+            from_secret: docker_registry_password
