@@ -449,10 +449,9 @@ is evaluated, it binds *CONTEXT* to itself and *REAL-CONTEXT* to the
 actual context. It then calls the BODY.
 
 When a result is evaluated within its body, it then ADD-RESULTs that
-to the real context. If it is a value-result, the body function thereof
-is replaced by a function that changes the result's status to whatever
-CHILD-STATUS is. It then evaluates the value-result in the real context.
-Once that returns, the value-result's value slot is made unbound again.
+to the real context. If it is a value-result, its status is set to
+CHILD-STATUS and its body is never evaluated. The controlling-result
+itself takes on CHILD-STATUS as well.
 
 See CHILD-STATUS")
 

@@ -321,15 +321,13 @@
     (funcall (body result))))
 
 (defmethod eval-in-context :after (context (result controlling-result))
-  (setf (status result) :passed))
+  (setf (status result) (child-status result)))
 
 (defmethod eval-in-context :before ((context controlling-result) (result result))
   (add-result result *real-context*))
 
 (defmethod eval-in-context ((context controlling-result) (result value-result))
-  (setf (body result) (lambda () (setf (status result) (child-status context))))
-  (eval-in-context *real-context* result)
-  (slot-makunbound result 'value)
+  (setf (status result) (child-status context))
   NIL)
 
 (defmethod format-result ((result controlling-result) (type (eql :oneline)))
