@@ -148,16 +148,22 @@
 (defmethod report-on ((result result) (report plain))
   (write-string (format-result result :oneline) (output report)))
 
+(defun exceeded-time-limit-p (result)
+  ;; Mirrors the check that marks a test failed for running over its
+  ;; time limit, so that the two stay in agreement.
+  (let ((limit (time-limit (expression result))))
+    (and limit (< limit (duration result)))))
+
 (defun result-counted-p (result)
-  ;; A test result is only counted when none of its children share its
-  ;; status. A test whose failure is already visible through one of its
-  ;; checks, or through a test nested in it, would otherwise be counted
-  ;; twice over. A test that fails without producing any result of its
-  ;; own, such as one that signals an unhandled error or exceeds its
-  ;; time limit, has nothing else to record it and so is counted itself.
+  ;; A test that runs over its time limit fails without producing any
+  ;; result of its own to record the failure, so it has to be counted
+  ;; itself. Any other test is already accounted for by whichever of its
+  ;; checks or nested tests carries the same status, and counting the
+  ;; test as well would count the one failure twice over.
   (or (not (typep result 'test-result))
-      (loop for child across (results result)
-            never (eql (status result) (status child)))))
+      (and (exceeded-time-limit-p result)
+           (loop for child across (results result)
+                 never (eql (status result) (status child))))))
 
 (defun filter-test-results (results)
   (remove-if-not #'result-counted-p results))
