@@ -148,8 +148,19 @@
 (defmethod report-on ((result result) (report plain))
   (write-string (format-result result :oneline) (output report)))
 
+(defun result-counted-p (result)
+  ;; A test result is only counted when none of its children share its
+  ;; status. A test whose failure is already visible through one of its
+  ;; checks, or through a test nested in it, would otherwise be counted
+  ;; twice over. A test that fails without producing any result of its
+  ;; own, such as one that signals an unhandled error or exceeds its
+  ;; time limit, has nothing else to record it and so is counted itself.
+  (or (not (typep result 'test-result))
+      (loop for child across (results result)
+            never (eql (status result) (status child)))))
+
 (defun filter-test-results (results)
-  (remove-if (lambda (a) (typep a 'test-result)) results))
+  (remove-if-not #'result-counted-p results))
 
 (defmethod summarize ((report plain))
   (let ((failures (results-with-status :failed report)))
