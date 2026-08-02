@@ -304,7 +304,10 @@
          (result (result-for-testable test context)))
     (setf (description result) (description test))
     (cond ((check-dependency-combination :passed context (dependencies test))
-           (eval-in-context context test))
+           ;; A bare SKIP stands the whole test down through this restart.
+           (restart-case (eval-in-context context test)
+             (skip-test ()
+               (setf (status result) :skipped))))
           (T
            (setf (status result) :skipped)))))
 
@@ -318,7 +321,9 @@
 (defmethod eval-in-context (context (result controlling-result))
   (let ((*real-context* context)
         (*context* result))
-    (funcall (body result))))
+    ;; A SKIP with a body stands only that body down through this restart.
+    (restart-case (funcall (body result))
+      (skip-body () NIL))))
 
 (defmethod eval-in-context :after (context (result controlling-result))
   (setf (status result) (child-status result)))

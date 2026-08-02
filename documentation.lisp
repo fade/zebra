@@ -840,7 +840,62 @@ Note the form will not be executed, only compiled.")
     "Forces the requested status upon the tests in the body without evaluating any value-results.")
 
   (function skip
-    "Skips the tests in the body by avoiding their evaluation and marking their status as :SKIPPED.")
+    "Skips ahead, marking the status of what was skipped as :SKIPPED.
+
+What gets skipped depends on whether a body was given, and is decided when the form
+is expanded rather than when it runs:
+
+  (skip \"reason\")             stands the rest of the enclosing test down.
+  (skip \"reason\" form...)     stands only the forms in the body down.
+
+The body form is the useful one when a test has further assertions that should still
+run. The bodyless form is the useful one when the rest of the test cannot safely run
+at all, which is usually why a test is being skipped in the first place.
+
+The forms in a body are still compiled, they are simply never evaluated.
+
+Note that this aborts, it does not cancel: cleanup forms that were already established
+around the skip still run, as they would for any other non-local exit.
+
+See SKIP-TEST
+See SKIP-BODY
+See TEST-SKIPPED
+See WITH-FORCED-STATUS")
+
+  (function test-skipped
+    "Condition signalled when a skip stands something down.
+
+The condition is signalled before the skip takes effect and is not an error, so
+handling it is optional and a HANDLER-CASE for ERROR around a test body will not
+swallow a skip. Bind a handler for it if you want to observe skips as they happen.
+
+See SKIP
+See SKIP-TEST
+See SKIP-BODY")
+
+  (function skip-test
+    "Stand the enclosing test down, marking its result as :SKIPPED.
+
+Signals TEST-SKIPPED and then invokes the SKIP-TEST restart, which is established
+around the body of every test. Signals an error if called outside of a test.
+
+This is what a bodyless SKIP expands to, and it can be called directly from a
+function that a test body calls.
+
+See SKIP
+See TEST-SKIPPED")
+
+  (function skip-body
+    "Stand the enclosing skip body down.
+
+Signals TEST-SKIPPED and then invokes the SKIP-BODY restart, which is established
+around the body of every WITH-FORCED-STATUS. Signals an error if called outside of
+one. The rest of the enclosing test is unaffected.
+
+This is what a SKIP with a body expands to.
+
+See SKIP
+See TEST-SKIPPED")
 
   (function skip-on
     "Skips the tests in the body if any of the given feature expressions match.
