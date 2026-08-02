@@ -104,6 +104,9 @@
   ;; toolkit.lisp
   (:export
    #:featurep
+   #:test-skipped
+   #:skip-test
+   #:skip-body
    #:with-shuffling
    #:*status-indicators*
    #:status-character
