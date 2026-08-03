@@ -94,16 +94,25 @@
   ())
 
 (defmethod eval-in-context (context (result finishing-result))
-  (unwind-protect
-       (handler-bind ((condition (lambda (err)
-                                   (setf (value result) err))))
-         (multiple-value-prog1
-             (call-next-method)
-           (setf (value result) NIL)
-           (unless (result-complete-p result)
-             (setf (status result) :passed))))
-    (unless (result-complete-p result)
-      (setf (status result) :failed))))
+  ;; A SKIP only leaves this form if the restart it unwinds to was already standing
+  ;; when the form was entered. One caught within the form never crosses this
+  ;; boundary and says nothing about how the form was left.
+  (let ((outer-restarts (compute-restarts))
+        (skipped NIL))
+    (unwind-protect
+         (handler-bind ((test-skipped (lambda (err)
+                                        (when (member (skip-restart err) outer-restarts)
+                                          (setf skipped T))))
+                        ((and condition (not test-skipped))
+                         (lambda (err)
+                           (setf (value result) err))))
+           (multiple-value-prog1
+               (call-next-method)
+             (setf (value result) NIL)
+             (unless (result-complete-p result)
+               (setf (status result) :passed))))
+      (unless (result-complete-p result)
+        (setf (status result) (if skipped :skipped :failed))))))
 
 (defmethod format-result ((result finishing-result) (type (eql :extensive)))
   (with-output-to-string (out)
@@ -318,7 +327,10 @@
 (defmethod eval-in-context (context (result controlling-result))
   (let ((*real-context* context)
         (*context* result))
-    (funcall (body result))))
+    ;; SKIP-BODY unwinds to here, so only the body is skipped and the enclosing test
+    ;; carries on.
+    (restart-case (funcall (body result))
+      (skip-body () NIL))))
 
 (defmethod eval-in-context :after (context (result controlling-result))
   (setf (status result) (child-status result)))

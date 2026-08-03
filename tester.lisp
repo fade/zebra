@@ -148,16 +148,26 @@
                        `(:description (format NIL ,description ,@format-args))))))
 
 (defmacro skip (desc &body tests)
-  `(with-forced-status (:skipped ,@(if (listp desc) desc (list desc)))
-     ,@tests))
+  ;; Which scope is skipped is settled here at macroexpansion time.
+  (let ((desc (if (listp desc) desc (list desc))))
+    (if tests
+        ;; There is a body, so the body is what was asked to be skipped. The body
+        ;; still runs; it is the test forms within it that WITH-FORCED-STATUS
+        ;; stands down, so the surrounding setup and teardown are unaffected.
+        `(with-forced-status (:skipped ,@desc)
+           ,@tests)
+        ;; There is nothing to skip but the rest of the test, so that is what
+        ;; gets aborted.
+        `(progn
+           (with-forced-status (:skipped ,@desc))
+           (skip-test)))))
 
 (defmacro skip-on (features desc &body tests)
   (let ((thunk (gensym "THUNK")))
     `(flet ((,thunk ()
               ,@tests))
        (if (featurep '(or ,@features))
-           (with-forced-status (:skipped ,@(if (listp desc) desc (list desc)))
-             (,thunk))
+           (skip ,desc (,thunk))
            (,thunk)))))
 
 (defmacro group ((name &optional description &rest format-args) &body tests)

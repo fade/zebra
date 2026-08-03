@@ -208,12 +208,18 @@
       (call-next-method))))
 
 (defmethod eval-in-context (context (test test))
-  (if (and *abort-on-timeout-p* (time-limit test))
-      (with-timeout (time-limit test)
-        (loop for test in (tests test)
-              do (funcall test)))
-      (loop for test in (tests test)
-            do (funcall test))))
+  ;; A bare SKIP aborts this test's body through this restart. It has to be established
+  ;; inside this method: around the call, the unwind would skip the AFTER method that
+  ;; runs the children.
+  (restart-case
+      (if (and *abort-on-timeout-p* (time-limit test))
+          (with-timeout (time-limit test)
+            (loop for test in (tests test)
+                  do (funcall test)))
+          (loop for test in (tests test)
+                do (funcall test)))
+    (skip-test ()
+      (setf (status (result-for-testable test context)) :skipped))))
 
 (defmethod eval-in-context :after (context (test test))
   (loop with skipped = (skipped-children test)

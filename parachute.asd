@@ -24,3 +24,8 @@
   :components ((:file "example"))
   :depends-on (:parachute)
   :perform (test-op (op c) (uiop:symbol-call :parachute :test :org.shirakumo.parachute.example)))
+
+(asdf:defsystem parachute/test
+  :components ((:file "self-test"))
+  :depends-on (:parachute)
+  :perform (test-op (op c) (uiop:symbol-call :parachute :test :org.shirakumo.parachute.test)))

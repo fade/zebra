@@ -834,13 +834,53 @@ Note the form will not be executed, only compiled.")
     "A tester that succeeds if the form returns a value that is of the requested type.")
 
   (function finish
-    "A tester that succeeds if the form returns without escaping.")
+    "A tester that succeeds if the form returns without escaping.
+
+A SKIP whose restart lies outside the form does not count as an escape: the result is
+marked :SKIPPED rather than :FAILED, as a skip is not a failure to finish. A skip that
+is caught within the form, such as a SKIP-BODY inside a WITH-FORCED-STATUS the form
+itself establishes, leaves the form running and has no bearing on how it was left. Any
+other non-local exit is still a failure.
+
+See SKIP")
 
   (function with-forced-status
-    "Forces the requested status upon the tests in the body without evaluating any value-results.")
+    "Forces the requested status upon the tests in the body without evaluating any value-results.
+
+The SKIP-BODY restart is established around the body, so a call to SKIP-BODY within
+it skips the rest of the body and leaves the enclosing test to carry on.
+
+See SKIP-BODY")
 
   (function skip
-    "Skips the tests in the body by avoiding their evaluation and marking their status as :SKIPPED.")
+    "Skips the rest of the enclosing test, or only the forms in the body, recording a result marked :SKIPPED in its place.
+
+What gets skipped depends on whether a body was given, and is decided when the form
+is expanded rather than when it runs:
+
+  (skip \"reason\")             aborts the rest of the enclosing test's body.
+  (skip \"reason\" form...)     skips only the test forms in the body.
+
+The body form is the useful one when a test has further assertions that should still
+run. The bodyless form is the useful one when the rest of the test cannot safely run
+at all, which is usually why a test is being skipped in the first place.
+
+Besides the result recorded for the SKIP itself, a bodyless SKIP marks the test's own
+result :SKIPPED. Any children of the test are still evaluated afterwards, as they are
+whenever a test's body finishes. The :SKIPPED status only stands if nothing else about
+the test failed: a test form that failed before the skip, or a child that fails after
+it, marks the test :FAILED as usual.
+
+The forms in a body are still evaluated. It is the test forms among them that stand
+down: each records a result marked :SKIPPED without running its own form.
+
+Note that cleanup forms already established around the skip still run, as they would for
+any other non-local exit.
+
+See SKIP-TEST
+See SKIP-BODY
+See TEST-SKIPPED
+See WITH-FORCED-STATUS")
 
   (function skip-on
     "Skips the tests in the body if any of the given feature expressions match.
@@ -852,7 +892,13 @@ normal.
 Note that if you have tests that will not /compile/ on a given feature combination, you still
 need to exclude those tests with reader conditionals as well.
 
-See FEATUREP")
+A body is what SKIP-ON stands down, so a SKIP-ON with no body has nothing to skip. It
+records a result marked :SKIPPED and the test then runs in full. Unlike a bodyless SKIP it
+does not abort the rest of the enclosing test, so SKIP is what to reach for when that is
+what you want.
+
+See FEATUREP
+See SKIP")
 
   (function group
     "Group the provided tests together under a name.
@@ -866,6 +912,55 @@ with the rest of the test forms."))
     "Returns T if the given feature expression matches the set of *FEATURES*
 
 The expression follows the standard feature syntax. See 24.1.2.1 in the CLHS.")
+
+  (type test-skipped
+    "Condition signalled when the rest of a test or of a skip body is abandoned.
+
+The condition names the restart the skip is about to invoke, so a handler can tell
+whether the skip is going to cross its own extent or is caught somewhere below it. A
+call that finds no matching restart signals an error instead, and does not signal this
+condition at all.
+
+The condition is signalled before the skip takes effect and is not an error, so
+handling it is optional and a HANDLER-CASE for ERROR around a test body will not
+swallow a skip. Bind a handler for it if you want to observe skips as they happen.
+
+Only SKIP-TEST and SKIP-BODY signal this, so a bodyless SKIP does and a SKIP with a
+body does not. A test skipped because a dependency failed, or because it is named in
+its parent's SKIP list, produces a :SKIPPED result without signalling it.
+
+See SKIP
+See SKIP-TEST
+See SKIP-BODY")
+
+  (function skip-test
+    "Abort the rest of the enclosing test's body, marking the test's result as :SKIPPED.
+
+Signals TEST-SKIPPED and then invokes the SKIP-TEST restart, which is established
+around the body of every test. Signals an error if called outside of a test.
+
+Any children of the test are still evaluated afterwards. The :SKIPPED status only stands
+if nothing else about the test failed: a test form that failed before the skip, or a
+child that fails after it, marks the test :FAILED as usual.
+
+This is what a bodyless SKIP expands to, and it can be called directly from a
+function that a test body calls.
+
+See SKIP
+See TEST-SKIPPED")
+
+  (function skip-body
+    "Skip the rest of the enclosing skip body.
+
+Signals TEST-SKIPPED and then invokes the SKIP-BODY restart, which is established
+around the body of every WITH-FORCED-STATUS. Signals an error if called outside of
+one. The rest of the enclosing test is unaffected.
+
+Call this to leave a skip body early. SKIP itself does not, as the forms in its body
+are meant to run.
+
+See SKIP
+See TEST-SKIPPED")
 
   (function shuffle
     "Shuffles the given sequence into a new one where the elements have uniformly distributed random placement.")

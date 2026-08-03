@@ -59,12 +59,19 @@ Sometimes it is then useful to skip children if you know that they are either fa
     (define-test suite
       :skip (test-a))
 
-If you need to skip individual test forms rather than a whole test, you can use the `skip` form.
+If you need to skip individual test forms rather than a whole test, you can give the `skip` form a body. Only the test forms in the body are skipped, and the rest of the test carries on as usual.
 
     (define-test stuff
       (true :pass)
       (skip "Not ready yet"
         (is = 5 (some-unimplemented-function 10))))
+
+Sometimes the rest of the test can't sensibly run at all, in which case you can leave the body out. None of the test's remaining forms are evaluated, and the test itself is marked as skipped. Any children it has are still run. The skipped status only stands if nothing else about the test failed, so a test form that failed before the skip, or a child that fails after it, still marks the test as failed.
+
+    (define-test stuff
+      (true :pass)
+      (skip "Nothing below here works yet")
+      (is = 5 (some-unimplemented-function 10)))
 
 If you need to skip tests depending on the implementation, or the presence of other feature combinations, you can use `skip-on`.
 

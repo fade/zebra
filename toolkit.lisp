@@ -58,6 +58,23 @@
   `(progn
      ,@body))
 
+(define-condition test-skipped ()
+  ((restart :initarg :restart :initform NIL :reader skip-restart))
+  (:report "A test or a test body was skipped."))
+
+(defun invoke-skip (restart message)
+  (let ((restart (find-restart restart)))
+    (unless restart
+      (error "~a" message))
+    (signal 'test-skipped :restart restart)
+    (invoke-restart restart)))
+
+(defun skip-test ()
+  (invoke-skip 'skip-test "SKIP was used outside of a test."))
+
+(defun skip-body ()
+  (invoke-skip 'skip-body "SKIP-BODY was used outside of a WITH-FORCED-STATUS."))
+
 (defun removef (place &rest indicators)
   (loop for (k v) on place by #'cddr
         for found = (find k indicators)
