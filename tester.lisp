@@ -1,4 +1,4 @@
-(in-package #:org.shirakumo.parachute)
+(in-package #:zebra)
 
 (defmacro true (form &optional description &rest format-args)
   `(eval-in-context

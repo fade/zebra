@@ -1,6 +1,5 @@
 (in-package #:cl-user)
-(defpackage #:parachute
-  (:nicknames #:org.shirakumo.parachute)
+(defpackage #:zebra
   (:use #:cl)
   ;; fixture.lisp
   (:export

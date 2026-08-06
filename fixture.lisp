@@ -1,4 +1,4 @@
-(in-package #:org.shirakumo.parachute)
+(in-package #:zebra)
 
 (defvar *fixture-captures* (make-hash-table :test 'eql))
 (defvar *fixture-restores* (make-hash-table :test 'eql))

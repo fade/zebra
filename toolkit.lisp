@@ -1,4 +1,4 @@
-(in-package #:org.shirakumo.parachute)
+(in-package #:zebra)
 
 (defun featurep (expr)
   (etypecase expr

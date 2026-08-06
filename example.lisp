@@ -1,6 +1,7 @@
-(defpackage #:org.shirakumo.parachute.example
-  (:use #:cl #:parachute))
-(in-package #:org.shirakumo.parachute.example)
+(defpackage #:zebra.example
+  (:use #:cl #:zebra))
+
+(in-package #:zebra.example)
 
 (define-test dependency
   (false (sleep 1)))

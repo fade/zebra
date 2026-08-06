@@ -7,8 +7,8 @@
 ;;;; it actually evaluated, so the suite can assert on absence as well as
 ;;;; presence.
 
-(defpackage #:org.shirakumo.parachute.test.subject
-  (:use #:cl #:parachute)
+(defpackage #:zebra.test.subject
+  (:use #:cl #:zebra)
   (:export
    #:*ran*
    #:plain-body
@@ -32,7 +32,7 @@
    #:suite-with-a-bare-skip-and-a-failing-child
    #:failing-suite-child))
 
-(in-package #:org.shirakumo.parachute.test.subject)
+(in-package #:zebra.test.subject)
 
 (defvar *ran* ()
   "Markers pushed by the subject tests, newest first.")
@@ -71,7 +71,7 @@
 
 (define-test skip-on-not-matching
   (push :before *ran*)
-  (skip-on (:parachute-feature-that-does-not-exist) "Not skipping anything."
+  (skip-on (:zebra-feature-that-does-not-exist) "Not skipping anything."
     (push :body *ran*))
   (push :after *ran*))
 
@@ -144,9 +144,10 @@
   (push :failing-child *ran*)
   (true NIL))
 
-(defpackage #:org.shirakumo.parachute.test
-  (:use #:cl #:parachute #:org.shirakumo.parachute.test.subject))
-(in-package #:org.shirakumo.parachute.test)
+(defpackage #:zebra.test
+  (:use #:cl #:zebra #:zebra.test.subject))
+
+(in-package #:zebra.test)
 
 (defun run-subject (name)
   "Run the named subject test on its own and return its markers in evaluation

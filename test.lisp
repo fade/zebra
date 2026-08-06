@@ -1,4 +1,4 @@
-(in-package #:org.shirakumo.parachute)
+(in-package #:zebra)
 
 (defvar *test-indexes* (make-hash-table :test 'eq))
 

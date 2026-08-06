@@ -1,4 +1,4 @@
-(asdf:defsystem parachute
+(asdf:defsystem zebra
   :version "1.5.0"
   :license "zlib"
   :author "Yukari Hafner <shinmera@tymoon.eu>"
@@ -20,12 +20,12 @@
                :trivial-custom-debugger
                :form-fiddle))
 
-(asdf:defsystem parachute/example
+(asdf:defsystem zebra/example
   :components ((:file "example"))
-  :depends-on (:parachute)
-  :perform (test-op (op c) (uiop:symbol-call :parachute :test :org.shirakumo.parachute.example)))
+  :depends-on (:zebra)
+  :perform (test-op (op c) (uiop:symbol-call :zebra :test :zebra.example)))
 
-(asdf:defsystem parachute/test
+(asdf:defsystem zebra/test
   :components ((:file "self-test"))
-  :depends-on (:parachute)
-  :perform (test-op (op c) (uiop:symbol-call :parachute :test :org.shirakumo.parachute.test)))
+  :depends-on (:zebra)
+  :perform (test-op (op c) (uiop:symbol-call :zebra :test :zebra.test)))
