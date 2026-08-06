@@ -1,4 +1,4 @@
-(asdf:defsystem parachute-lisp-unit
+(asdf:defsystem zebra-lisp-unit
   :version "1.0.0"
   :license "zlib"
   :author "Yukari Hafner <shinmera@tymoon.eu>"
@@ -9,4 +9,4 @@
   :source-control (:git "https://shinmera.com/project/parachute.git")
   :serial T
   :components ((:file "lisp-unit"))
-  :depends-on (:parachute))
+  :depends-on (:zebra))

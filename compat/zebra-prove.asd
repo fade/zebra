@@ -1,4 +1,4 @@
-(asdf:defsystem parachute-prove
+(asdf:defsystem zebra-prove
   :version "1.0.0"
   :license "zlib"
   :author "Yukari Hafner <shinmera@tymoon.eu>"
@@ -9,5 +9,5 @@
   :source-control (:git "https://shinmera.com/project/parachute.git")
   :serial T
   :components ((:file "prove"))
-  :depends-on (:parachute
+  :depends-on (:zebra
                :cl-ppcre))

@@ -1,6 +1,6 @@
 (in-package #:cl-user)
-(defpackage #:org.shirakumo.parachute.5am
-  (:nicknames #:5am #:parachute-5am #:fiveam #:parachute-fiveam)
+(defpackage #:zebra.5am
+  (:nicknames #:5am #:zebra-5am #:fiveam #:zebra-fiveam)
   (:use #:cl)
   (:export
    #:*default-test-compilation-time*
@@ -48,7 +48,8 @@
    #:*debug-on-failure*
    #:*verbose-failures*
    #:*run-test-when-defined*))
-(in-package #:org.shirakumo.parachute.5am)
+
+(in-package #:zebra.5am)
 
 (pushnew :5am *features*)
 
@@ -62,7 +63,7 @@
 (defvar *!* NIL)
 (defvar *!!* NIL)
 (defvar *!!!* NIL)
-(defvar *home* (find-package '#:org.shirakumo.parachute.5am))
+(defvar *home* (find-package '#:zebra.5am))
 (defvar *num-trials* 100)
 (defvar *default-test-compilation-time* :run-time)
 
@@ -71,7 +72,7 @@
 
 ;; Tests
 (defun make-suite (name &key description in)
-  (make-instance 'parachute:test
+  (make-instance 'zebra:test
                  :name name
                  :home *home*
                  :parent in
@@ -79,7 +80,7 @@
 
 (defmacro def-suite (name &key description in)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (parachute:define-test ,name
+     (zebra:define-test ,name
        :home *home*
        :description ,description
        :parent ,in)))
@@ -88,22 +89,22 @@
   ;; The eval-when is a departure from 5AM, but we have to do this as the
   ;; parent needs to be evaluated at compile-time in the test definition.
   `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (unless (parachute:find-test ',suite-name *home*)
+     (unless (zebra:find-test ',suite-name *home*)
        (cerror "Create a new suite named ~a"
                "Unknown suite ~a." ',suite-name)
-       (parachute:define-test ,suite-name))
+       (zebra:define-test ,suite-name))
      (setf *suite* ',suite-name)
      ',suite-name))
 
 (defun get-test (key &optional default)
-  (or (parachute:find-test key *home*)
+  (or (zebra:find-test key *home*)
       default))
 
 (defun rem-test (key)
-  (parachute:remove-test key *home*))
+  (zebra:remove-test key *home*))
 
 (defun test-names ()
-  (mapcar #'parachute:name (parachute:package-tests *home*)))
+  (mapcar #'zebra:name (zebra:package-tests *home*)))
 
 (defmacro test (name &body body)
   (destructuring-bind (name &key depends-on (suite *suite*) fixture (compile-at *default-test-compilation-time*) profile) (enlist name)
@@ -129,7 +130,7 @@
                     `((with-fixture ,name ,args ,@body)))
                   body)))
     `(progn
-       (parachute:define-test ,name
+       (zebra:define-test ,name
          :home *home*
          :parent ,suite
          :depends-on ,(when depends-on (convert-depends-on depends-on))

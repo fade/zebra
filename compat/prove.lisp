@@ -1,6 +1,6 @@
 (in-package #:cl-user)
-(defpackage #:org.shirakumo.parachute.prove
-  (:nicknames #:prove #:parachute-prove)
+(defpackage #:zebra.prove
+  (:nicknames #:prove #:zebra-prove)
   (:use #:cl)
   (:export
    #:*debug-on-error*
@@ -42,14 +42,15 @@
    #:reset-suite
    #:suite
    #:package-suite))
-(in-package #:org.shirakumo.parachute.prove)
+
+(in-package #:zebra.prove)
 
 (defvar *test-result-output* T)
 (defvar *suite* NIL)
 ;; These don't actually do anything
 (defvar *debug-on-error* NIL)
 (defvar *default-test-function* #'equal)
-(defvar *default-reporter* 'parachute:plain)
+(defvar *default-reporter* 'zebra:plain)
 (defvar *gensym-prefix* "$")
 (defvar *default-slow-threshold* 75)
 (defvar *enable-colors* NIL)
@@ -112,101 +113,101 @@
       args))
 
 (defmacro ok (test &optional description)
-  `(parachute:true ,test "~a" ,description))
+  `(zebra:true ,test "~a" ,description))
 
 (defmacro is (got expected &rest args)
   (multiple-value-bind (desc test) (parse-description-and-test args)
-    `(parachute:true (funcall ,test ,got ,expected) "~a" ,desc)))
+    `(zebra:true (funcall ,test ,got ,expected) "~a" ,desc)))
 
 (defmacro isnt (got expected &rest args)
   (multiple-value-bind (desc test) (parse-description-and-test args)
-    `(parachute:false (funcall ,test ,got ,expected) "~a" ,desc)))
+    `(zebra:false (funcall ,test ,got ,expected) "~a" ,desc)))
 
 (defmacro is-values (got expected &rest args)
   `(is (multiple-value-list ,got) ,expected ,@args))
 
 (defmacro is-print (got expected &optional desc)
-  `(parachute:is equal ,expected (capture-stdout ,got) "~a" ,desc))
+  `(zebra:is equal ,expected (capture-stdout ,got) "~a" ,desc))
 
 (defmacro is-condition (got condition &optional desc)
-  `(parachute:fail ,got ,condition "~a" ,desc))
+  `(zebra:fail ,got ,condition "~a" ,desc))
 
 (defmacro is-error (got condition &optional desc)
   `(is-condition ,got ,condition ,desc))
 
 (defmacro is-type (got expected &optional desc)
-  `(parachute:is typep ,expected ,got "~a" ,desc))
+  `(zebra:is typep ,expected ,got "~a" ,desc))
 
 (defmacro like (got regex &optional desc)
-  `(parachute:is cl-ppcre:scan ,regex ,got "~a" ,desc))
+  `(zebra:is cl-ppcre:scan ,regex ,got "~a" ,desc))
 
 (defmacro is-expand (got expected &optional desc)
-  `(parachute:is equal ',expected (macroexpand-1 ',got) "~a" ,desc))
+  `(zebra:is equal ',expected (macroexpand-1 ',got) "~a" ,desc))
 
 (defun diag (desc)
-  (format (parachute:output parachute:*context*) "~& ==> ~a~%" desc))
+  (format (zebra:output zebra:*context*) "~& ==> ~a~%" desc))
 
 (defun skip (how-many why &rest format-args)
   (diag (format NIL "Skipping the next ~a tests: ~?" how-many why format-args))
-  (setf (to-skip parachute:*context*) how-many))
+  (setf (to-skip zebra:*context*) how-many))
 
 (defun pass (desc)
-  `(parachute:eval-in-context
-    parachute:*context*
-    (make-instance 'parachute:result
+  `(zebra:eval-in-context
+    zebra:*context*
+    (make-instance 'zebra:result
                    :status :passed
                    :description ,desc)))
 
 (defun fail (desc)
-  `(parachute:eval-in-context
-    parachute:*context*
-    (make-instance 'parachute:result
+  `(zebra:eval-in-context
+    zebra:*context*
+    (make-instance 'zebra:result
                    :status :failed
                    :description ,desc)))
 
-(defclass subtest (parachute:parent-result)
+(defclass subtest (zebra:parent-result)
   ((body :initarg :body :accessor body)))
 
-(defmethod parachute:eval-in-context (context (result subtest))
+(defmethod zebra:eval-in-context (context (result subtest))
   (funcall (body result)))
 
 (defmacro subtest (desc &body body)
-  `(parachute:eval-in-context
-    parachute:*context*
+  `(zebra:eval-in-context
+    zebra:*context*
     (make-instance 'subtest
                    :expression ,desc
                    :body (lambda () ,@body))))
 
 (defmacro deftest (name &body test-forms)
-  `(parachute:define-test ,name
+  `(zebra:define-test ,name
      ,@test-forms))
 
 (defun run-test (name)
-  (parachute:test name :output *test-result-output*))
+  (zebra:test name :output *test-result-output*))
 
 (defun run-test-package (package)
-  (parachute:test package :output *test-result-output*))
+  (zebra:test package :output *test-result-output*))
 
 (defun run-test-all ()
-  (loop for package being the hash-keys of parachute::*test-indexes*
+  (loop for package being the hash-keys of zebra::*test-indexes*
         do (run-test-package package)))
 
 (defun remove-test (name)
-  (parachute:remove-test name *package*))
+  (zebra:remove-test name *package*))
 
 (defun remove-test-all ()
-  (dolist (test (parachute:package-tests *package*))
-    (parachute:remove-test test)))
+  (dolist (test (zebra:package-tests *package*))
+    (zebra:remove-test test)))
 
 ;; That'll do, pig.
-(defclass suite (parachute:plain)
+(defclass suite (zebra:plain)
   ((to-skip :initarg :to-skip :initform 0 :accessor to-skip)))
 
-(defmethod parachute:eval-in-context ((report suite) (result parachute:result))
+(defmethod zebra:eval-in-context ((report suite) (result zebra:result))
   (cond ((<= (to-skip report) 0)
          (call-next-method))
         (T
-         (setf (parachute:status result) :skipped)
+         (setf (zebra:status result) :skipped)
          (decf (to-skip report)))))
 
 ;; That'll do.
@@ -230,16 +231,16 @@
   (or *suite* (find-package-suite *package*)))
 
 (defun reset-suite (suite)
-  (setf (parachute:duration suite) NIL)
-  (setf (parachute:status suite) :unknown)
-  (setf (fill-pointer (parachute:children suite)) 0))
+  (setf (zebra:duration suite) NIL)
+  (setf (zebra:status suite) :unknown)
+  (setf (fill-pointer (zebra:children suite)) 0))
 
 (defun plan (n)
   ;; Still not sure what the number is even useful for.
   (declare (ignore n))
-  (setf parachute:*context* (current-suite))
-  (reset-suite parachute:*context*))
+  (setf zebra:*context* (current-suite))
+  (reset-suite zebra:*context*))
 
 (defun finalize ()
-  (parachute:summarize (current-suite))
-  (setf parachute:*context* NIL))
+  (zebra:summarize (current-suite))
+  (setf zebra:*context* NIL))

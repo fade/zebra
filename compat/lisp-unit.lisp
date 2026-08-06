@@ -1,6 +1,6 @@
 (in-package #:cl-user)
-(defpackage #:org.shirakumo.parachute.lisp-unit
-  (:nicknames #:lisp-unit #:parachute-lisp-unit)
+(defpackage #:zebra.lisp-unit
+  (:nicknames #:lisp-unit #:zebra-lisp-unit)
   (:use #:cl)
   (:export
    #:*print-summary*
@@ -50,7 +50,8 @@
   (:export
    #:logically-equal
    #:set-equal))
-(in-package #:org.shirakumo.parachute.lisp-unit)
+
+(in-package #:zebra.lisp-unit)
 
 ;; These don't actually do anything.
 (defvar *print-summary* T)
@@ -72,39 +73,39 @@
     (macroexpand-1 form)))
 
 (defmacro assert-eq (expected form)
-  `(parachute:is eq ,expected ,form))
+  `(zebra:is eq ,expected ,form))
 
 (defmacro assert-eql (expected form)
-  `(parachute:is eql ,expected ,form))
+  `(zebra:is eql ,expected ,form))
 
 (defmacro assert-equal (expected form)
-  `(parachute:is equal ,expected ,form))
+  `(zebra:is equal ,expected ,form))
 
 (defmacro assert-equalp (expected form)
-  `(parachute:is equalp ,expected ,form))
+  `(zebra:is equalp ,expected ,form))
 
 (defmacro assert-error (condition form)
-  `(parachute:fail ,form ,condition))
+  `(zebra:fail ,form ,condition))
 
 ;; To be honest I don't know how this comparison could ever work
 ;; if it's by EQL, but that's what the source appears to do...
 (defmacro assert-expands (expansion form)
-  `(parachute:is eql ',expansion (expansion ',form)))
+  `(zebra:is eql ',expansion (expansion ',form)))
 
 (defmacro assert-equality (test expected form)
-  `(parachute:true (funcall ,test ,expected ,form)))
+  `(zebra:true (funcall ,test ,expected ,form)))
 
 (defmacro assert-prints (output form)
-  `(parachute:is equal ,output (capture-stdout ,form)))
+  `(zebra:is equal ,output (capture-stdout ,form)))
 
 (defmacro assert-nil (form)
-  `(parachute:false ,form))
+  `(zebra:false ,form))
 
 (defmacro assert-false (form)
-  `(parachute:false ,form))
+  `(zebra:false ,form))
 
 (defmacro assert-true (form)
-  `(parachute:true ,form))
+  `(zebra:true ,form))
 
 (defun parse-body (body)
   (let ((tags ())
@@ -125,7 +126,7 @@
 (defmacro define-test (name &body body)
   (let ((tag (gensym "TAG")))
     (multiple-value-bind (doc tags body) (parse-body body)
-      `(progn (parachute:define-test ,name
+      `(progn (zebra:define-test ,name
                 :description ,doc
                 ,@body)
               (dolist (,tag ',tags)
@@ -133,26 +134,26 @@
               ',name))))
 
 (defun list-tests (&optional (package *package*))
-  (parachute:package-tests package))
+  (zebra:package-tests package))
 
 (Defun test-code (name &optional (package *package*))
   (declare (ignore name package))
   NIL)
 
 (defun test-documentation (name &optional (package *package*))
-  (parachute:description
-   (parachute:find-test name package)))
+  (zebra:description
+   (zebra:find-test name package)))
 
 (defun remove-tests (&optional (names :all) (package *package*))
   (if (eq :all names)
       (if package
-          (clrhash (gethash package parachute::*test-indexes* (make-hash-table)))
-          (clrhash parachute::*test-indexes*))
+          (clrhash (gethash package zebra::*test-indexes* (make-hash-table)))
+          (clrhash zebra::*test-indexes*))
       (dolist (name names)
-        (parachute:remove-test name package))))
+        (zebra:remove-test name package))))
 
 (defun run-tests (&optional (test-names :all) (package *package*))
-  (parachute:test (if (eql :all test-names) package test-names) :report *report*))
+  (zebra:test (if (eql :all test-names) package test-names) :report *report*))
 
 (defun use-debugger (&optional (flag T))
   (setf *report* (if flag 'interactive 'report)))
@@ -181,12 +182,12 @@
   (run-tests (tagged-tests tags package) package))
 
 (defun test-names ()
-  (loop for index being the hash-values of parachute::*test-indexes*
+  (loop for index being the hash-values of zebra::*test-indexes*
         append (loop for test being the hash-values of index
-                     collect (parachute:name test))))
+                     collect (zebra:name test))))
 
 (defun failed-tests (report)
-  (parachute:tests-with-status :failed report))
+  (zebra:tests-with-status :failed report))
 
 (defun error-tests (report)
   (failed-tests report))
@@ -204,9 +205,9 @@
     (declare (ignore result stream))))
 
 (defun summarize-results (results &optional (stream *standard-output*))
-  (let ((report (make-instance 'parachute:plain :expression 'lisp-unit :stream stream)))
-    (setf (parachute:children report) results)
-    (parachute:summarize report)))
+  (let ((report (make-instance 'zebra:plain :expression 'lisp-unit :stream stream)))
+    (setf (zebra:children report) results)
+    (zebra:summarize report)))
 
 (defun reduce-test-results-dbs (all-results &key merge)
   (error "Not implemented."))
