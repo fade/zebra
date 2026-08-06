@@ -2,7 +2,7 @@
   :version "1.5.0"
   :license "zlib"
   :author "Yukari Hafner <shinmera@tymoon.eu>"
-  :maintainer "Yukari Hafner <shinmera@tymoon.eu>"
+  :maintainer "Brian O'Reilly <fade@deepsky.com>"
   :description "An extensible and cross-compatible testing framework."
   :homepage "https://shinmera.com/docs/parachute/"
   :bug-tracker "https://shinmera.com/project/parachute/issues"
