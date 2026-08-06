@@ -163,71 +163,71 @@
 
 ;; Checks
 (defmacro is (test &rest reason-args)
-  `(parachute:true ,test ,@reason-args))
+  `(zebra:true ,test ,@reason-args))
 
 (defmacro is-true (condition &rest reason)
-  `(parachute:true ,condition ,@reason))
+  `(zebra:true ,condition ,@reason))
 
 (defmacro is-false (condition &rest reason)
-  `(parachute:false ,condition ,@reason))
+  `(zebra:false ,condition ,@reason))
 
 (defmacro signals (condition-spec &body body)
   `(block NIL
-     (parachute:fail (progn ,@body) ,condition-spec)))
+     (zebra:fail (progn ,@body) ,condition-spec)))
 
 (defmacro finishes (&body body)
-  `(parachute:finish (progn ,@body)))
+  `(zebra:finish (progn ,@body)))
 
 (defmacro skip (&rest reason)
-  `(parachute:eval-in-context
-    parachute:*context*
-    (make-instance 'parachute:result
+  `(zebra:eval-in-context
+    zebra:*context*
+    (make-instance 'zebra:result
                    :status :skipped
                    :description (format NIL ,@reason))))
 
 (defmacro pass (&rest reason)
   `(eval-in-context
     *context*
-    (make-instance 'parachute:result
+    (make-instance 'zebra:result
                    :status :passed
                    :description (format NIL ,@reason))))
 
 (defmacro fail (&rest reason)
-  `(parachute:eval-in-context
-    parachute:*context*
-    (make-instance 'parachute:result
+  `(zebra:eval-in-context
+    zebra:*context*
+    (make-instance 'zebra:result
                    :status :failed
                    :description (format NIL ,@reason))))
 
 ;; Generation
-(defclass generation-result (parachute:parent-result)
+(defclass generation-result (zebra:parent-result)
   ((generators :initarg :generators :accessor generators)
    (guard :initarg :guard :accessor guard)
    (body :initarg :body :accessor body)))
 
-(defmethod parachute:eval-in-context (context (result generation-result))
+(defmethod zebra:eval-in-context (context (result generation-result))
   (loop with failure = NIL
         for vars = (mapcar #'funcall (generators result))
         repeat *num-trials*
-        do (setf (fill-pointer (parachute:results result)) 0)
+        do (setf (fill-pointer (zebra:results result)) 0)
            ;; in order to avoid processing "uninteresting" results,
            ;; we simply catch everything and rebind the context and
            ;; rerun the last trial with the proper context. This may
            ;; be problematic in the case of side-effects, but I can't
            ;; think of anything better right now.
-           (let ((parachute:*context* result))
+           (let ((zebra:*context* result))
              (handler-case (apply (body result) vars)
                (error (err) (setf failure err))))
         until (or failure
-                  (loop for child across (parachute:results result)
-                        thereis (eql :failed (parachute:status child))))
+                  (loop for child across (zebra:results result)
+                        thereis (eql :failed (zebra:status child))))
         while (apply (guard result) vars)
         finally (apply (body result) vars)))
 
 (defmacro for-all (bindings &body body)
   (let ((vars (mapcar #'first bindings)))
-    `(parachute:eval-in-context
-      parachute:*context*
+    `(zebra:eval-in-context
+      zebra:*context*
       (make-instance 'generation-result
                      :expression '(for-all ,bindings ,@body)
                      :generators (list ,@(mapcar #'second bindings))
@@ -304,31 +304,31 @@
 
 ;; Running
 (defun test-results (report)
-  (remove-if-not (lambda (a) (typep a 'parachute:test-result))
-                 (parachute:results report)))
+  (remove-if-not (lambda (a) (typep a 'zebra:test-result))
+                 (zebra:results report)))
 
 (defun run (test)
-  (let ((test (or (parachute:find-test test *home*)
+  (let ((test (or (zebra:find-test test *home*)
                   (error "No such test ~s." test))))
     (shiftf *!!!* *!!* *!* (lambda ()
-                             (test-results (parachute:test test :report 'parachute:quiet))))
+                             (test-results (zebra:test test :report 'zebra:quiet))))
     (funcall *!*)))
 
 (defun run! (test)
-  (let ((test (or (parachute:find-test test *home*)
+  (let ((test (or (zebra:find-test test *home*)
                   (error "No such test ~s." test))))
     (shiftf *!!!* *!!* *!* (lambda ()
-                             (test-results (parachute:test test :report 'parachute:plain))))
+                             (test-results (zebra:test test :report 'zebra:plain))))
     (funcall *!*)))
 
 (defun explain! (result-list)
-  (explain 'parachute:plain result-list))
+  (explain 'zebra:plain result-list))
 
 (defun explain (report-type results &optional stream recursive-depth)
   (declare (ignore recursive-depth))
   (let ((report (make-instance report-type :expression '5am :stream stream)))
-    (setf (parachute:results report) (coerce results 'vector))
-    (parachute:summarize report)))
+    (setf (zebra:results report) (coerce results 'vector))
+    (zebra:summarize report)))
 
 (defun ! () (funcall *!*))
 (defun !! () (funcall *!!*))

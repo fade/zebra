@@ -6,5 +6,5 @@ readonly IMPLEMENTATION="${PLUGIN_IMPLEMENTATION:-sbcl}"
 exec /usr/local/bin/cl-all "$IMPLEMENTATION" -vni \
      -l "${HOME}/.quicklisp/setup.lisp" \
      -e "(asdf:initialize-source-registry (list :source-registry :ignore-inherited-configuration (list :tree (uiop:parse-native-namestring \"$(pwd)/\"))))" \
-     -e "(ql:quickload '(parachute ${systems[@]}))" \
-     -e "(parachute:test-toplevel '(${tests[@]}))"
+     -e "(ql:quickload '(zebra ${systems[@]}))" \
+     -e "(zebra:test-toplevel '(${tests[@]}))"
