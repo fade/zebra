@@ -1,3 +1,27 @@
+# Zebra is an altered version of Parachute
+
+**This is not Parachute.** Zebra is a modified fork of
+[Parachute](https://shinmera.com/docs/parachute/), written by Yukari Hafner, who is not
+responsible for this version and does not maintain it. Please do not report problems with
+Zebra to her; use this repository's issue tracker.
+
+Zebra keeps Parachute's interface, so existing suites are expected to load and run. It does
+not keep all of Parachute's behaviour. **Two differences change results you may already be
+relying on:**
+
+- **A `skip` with no body aborts the rest of the test.** Under Parachute the remaining forms
+  in the test still run after a bodyless `skip`. Under Zebra they do not.
+- **Failures are counted that Parachute did not count.** Some failing tests reported no
+  counted failure at all; they now report one. A suite that passed under Parachute can
+  therefore report failures under Zebra without anything having changed in the suite.
+
+⚠ The documentation below is Parachute's and has not been rewritten. It describes the shared
+interface accurately, but it still uses the Parachute name throughout, and its instructions
+for system names and package names are out of date for this fork.
+
+The original Parachute remains available from its author at the link above, and is the right
+choice if you want the upstream behaviour.
+
 ## About parachute
 Parachute is a simple-to-use and extensible testing framework.
 
