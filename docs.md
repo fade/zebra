@@ -3,8 +3,6 @@ name: parachute
 description: A container for running Parachute test suites.
 author: Yukari Hafner
 tags: [commonlisp, lisp, testing]
-containerImage: shinmera/parachute
-containerImageUrl: https://hub.docker.com/r/shinmera/parachute
 url: https://shinmera.com/projects/parachute
 ---
 
