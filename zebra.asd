@@ -1,5 +1,5 @@
 (asdf:defsystem zebra
-  :version "1.5.0"
+  :version "0.1.0"
   :license "zlib"
   :author "Yukari Hafner <shinmera@tymoon.eu>"
   :maintainer "Brian O'Reilly <fade@deepsky.com>"
