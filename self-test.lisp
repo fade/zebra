@@ -193,6 +193,24 @@ with duplicates removed rather than read off any single level of it."
        (when (typep result 'value-result)
          (list result)))))
 
+(defun plain-summary (name)
+  "The text a PLAIN report prints for the named subject run on its own.
+
+The bindings are as in RUN-SUBJECT, and the report is pointed at a string so the
+subject's output does not land in the surrounding run's."
+  (let ((*ran* ())
+        (*parent* NIL)
+        (*context* NIL)
+        (stream (make-string-output-stream)))
+    (test name :report 'plain :stream stream)
+    (get-output-stream-string stream)))
+
+(defun summary-count (label summary)
+  "The number the summary text prints on the line LABEL introduces."
+  (let ((start (search label summary)))
+    (when start
+      (parse-integer summary :start (+ start (length label)) :junk-allowed T))))
+
 (define-test control-a-plain-body-runs-to-the-end
   (is equal '(:before :after) (markers 'plain-body)))
 
@@ -237,6 +255,14 @@ with duplicates removed rather than read off any single level of it."
 
 (define-test a-bare-skip-leaves-results-for-the-children
   (is = 2 (length (child-results 'suite-with-a-bare-skip))))
+
+;; A single stood-down test puts two entries in the skipped set: its own result, and
+;; the result of the form that stood it down. Only one test stood down.
+(define-test plain-summary-counts-each-skip-once
+  (is = 1 (summary-count "Skipped:" (plain-summary 'bare-skip)))
+  ;; Control, so the one above is a count of the skip rather than whatever the line
+  ;; always says.
+  (is = 0 (summary-count "Skipped:" (plain-summary 'plain-body))))
 
 (define-test a-failing-child-marks-a-skipped-test-failed
   (multiple-value-bind (markers report) (run-subject 'suite-with-a-bare-skip-and-a-failing-child)
