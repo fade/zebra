@@ -15,6 +15,33 @@ relying on:**
   counted failure at all; they now report one. A suite that passed under Parachute can
   therefore report failures under Zebra without anything having changed in the suite.
 
+## Why Zebra exists
+
+Zebra began with a change to how `skip` behaves. That change was offered to Parachute upstream
+and declined, on the grounds that it contradicted a deliberate design decision there. Both
+positions are defensible and the disagreement is a real one, so the route left open was a fork
+rather than a patch.
+
+The reason to go on maintaining it is broader than the skip change itself: a testing framework
+should report results you can trust as data.
+
+A test run produces exact information. Every result knows its own status, what it was comparing,
+how long it took, and, when it fails, whether it failed an assertion or signalled an error. That
+information is complete at the moment it is produced. Rendering it as text for a person discards
+most of it, because prose has to choose what to say and a summary line has to choose what to
+count.
+
+The cost of that lands on whatever reads the output next. A continuous integration gate, a build
+script, or another program cannot ask the run what happened. It can only read the text and work
+backwards, and some of what it needs was never in the text: two different situations can print
+the same character, a count can leave out a case it has no way to classify, and a run that found
+no tests at all can print what a run of passing tests prints.
+
+Zebra treats the result objects as the answer to what happened in a run, and a printed report as
+one rendering of that answer for a reader. The two behaviour changes above follow from it. A
+bodyless `skip` means what it says, and a test that fails is counted as a failure even when
+nothing inside it recorded one.
+
 ⚠ The documentation below is Parachute's and has not been rewritten. It describes the shared
 interface accurately, but it still uses the Parachute name throughout, and its instructions
 for system names and package names are out of date for this fork.
