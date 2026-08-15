@@ -264,6 +264,17 @@ subject's output does not land in the surrounding run's."
   ;; always says.
   (is = 0 (summary-count "Skipped:" (plain-summary 'plain-body))))
 
+;; A test that errors before asserting anything leaves no check behind to carry the
+;; failure, so the summary has to count the test itself or the failure goes unreported.
+(define-test an-erroring-test-is-counted-in-the-summary
+  (is = 1 (summary-count "Failed:" (plain-summary 'unhandled-error)))
+  ;; Control, so the one above is a count of the failure rather than whatever the line
+  ;; always says.
+  (is = 0 (summary-count "Failed:" (plain-summary 'plain-body)))
+  ;; A test that asserts nothing and passes is still not counted, so the rule stays
+  ;; narrow enough to leave the numbers of a passing run alone.
+  (is = 0 (summary-count "Passed:" (plain-summary 'plain-body))))
+
 (define-test a-failing-child-marks-a-skipped-test-failed
   (multiple-value-bind (markers report) (run-subject 'suite-with-a-bare-skip-and-a-failing-child)
     (declare (ignore markers))

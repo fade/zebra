@@ -155,13 +155,14 @@
     (and limit (< limit (duration result)))))
 
 (defun result-counted-p (result)
-  ;; A test that runs over its time limit fails without producing any
-  ;; result of its own to record the failure, so it has to be counted
-  ;; itself. Any other test is already accounted for by whichever of its
-  ;; checks or nested tests carries the same status, and counting the
-  ;; test as well would count the one failure twice over.
+  ;; A test is normally already accounted for by whichever of its checks
+  ;; or nested tests carries the same status, and counting the test as
+  ;; well would count the one failure twice over. A test that fails with
+  ;; no child carrying that failure -- it ran over its time limit, or it
+  ;; errored before asserting anything -- has nothing else to record it,
+  ;; so it has to be counted itself.
   (or (not (typep result 'test-result))
-      (and (exceeded-time-limit-p result)
+      (and (eql :failed (status result))
            (loop for child across (results result)
                  never (eql (status result) (status child))))))
 
