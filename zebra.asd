@@ -15,6 +15,7 @@
                (:file "result")
                (:file "tester")
                (:file "report")
+               (:file "structured")
                (:file "documentation"))
   :depends-on (:documentation-utils
                :trivial-custom-debugger

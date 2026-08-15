@@ -30,7 +30,11 @@
    #:suite-child-a
    #:suite-child-b
    #:suite-with-a-bare-skip-and-a-failing-child
-   #:failing-suite-child))
+   #:failing-suite-child
+   #:passing-assertion
+   #:failing-assertion
+   #:unresolved-form
+   #:resolved-form))
 
 (in-package #:zebra.test.subject)
 
@@ -143,6 +147,28 @@
   :parent suite-with-a-bare-skip-and-a-failing-child
   (push :failing-child *ran*)
   (true NIL))
+
+;; An assertion that failed and a body that errored both leave the test failed, so
+;; a report that says only that much cannot tell them apart. These two, and the
+;; passing one beside them, are what put that to the question.
+(define-test passing-assertion
+  (true T))
+
+(define-test failing-assertion
+  (true NIL))
+
+;; A form left by a non-local exit is never decided either way. Nothing about it
+;; passed and nothing about it failed, and a report with only those two words has
+;; to call it one of them.
+(define-test unresolved-form
+  (block escape
+    (true (return-from escape :gone))))
+
+;; Control for the one above: the same form, left normally.
+(define-test resolved-form
+  (block escape
+    (true :here)
+    (return-from escape :gone)))
 
 (defpackage #:zebra.test
   (:use #:cl #:zebra #:zebra.test.subject))
@@ -306,3 +332,117 @@ subject's output does not land in the surrounding run's."
 
 (define-test control-a-finish-that-completes-passes
   (is eql :passed (finishing-status 'finish-that-completes)))
+
+(defun structured-form (designator)
+  "The form a STRUCTURED report writes for DESIGNATOR run on its own, read back.
+
+The bindings are as in RUN-SUBJECT, and the report is pointed at a string so the
+subject's output does not land in the surrounding run's. Reading is done under
+standard syntax with *READ-EVAL* disabled, in a package that has never heard of
+the subject, so what the assertions see is what any consumer would get rather
+than the list the report happened to build."
+  (let ((*ran* ())
+        (*parent* NIL)
+        (*context* NIL)
+        (stream (make-string-output-stream)))
+    (test designator :report 'structured :stream stream)
+    (let ((text (get-output-stream-string stream)))
+      (with-standard-io-syntax
+        (let ((*package* (find-package '#:cl-user))
+              (*read-eval* NIL))
+          (with-input-from-string (input text)
+            (values (read input) (read input NIL :eof))))))))
+
+(defun structured-nodes (form)
+  "Every result node in the structured FORM, parents before their children."
+  (labels ((walk (node)
+             (list* node (mapcan #'walk (getf node :children)))))
+    (mapcan #'walk (getf form :results))))
+
+(defun structured-node (form kind)
+  "The first node of the given KIND in the structured FORM."
+  (find kind (structured-nodes form) :key (lambda (node) (getf node :kind))))
+
+(define-test a-structured-report-is-one-form-a-reader-accepts
+  (multiple-value-bind (form rest) (structured-form 'plain-body)
+    (is eql :eof rest)
+    (is eql :zebra-report (first form))
+    (is = *structured-report-version* (second form))
+    (of-type real (getf (first (getf form :results)) :duration))))
+
+(define-test a-structured-report-names-everything-in-strings
+  ;; A consumer must be able to read the report without the tested code loaded,
+  ;; so nothing in it may be a symbol that has to be interned somewhere first.
+  (let ((form (structured-form 'plain-body)))
+    (is equal "ZEBRA.TEST.SUBJECT::PLAIN-BODY" (getf (first (getf form :results)) :name))
+    (is equal "ZEBRA.TEST.SUBJECT" (first (first (getf form :packages))))
+    (dolist (node (structured-nodes form))
+      (of-type string (getf node :name)))))
+
+(define-test a-passing-test-is-marked-passed
+  (is eql :passed (getf (structured-node (structured-form 'passing-assertion) :test) :status))
+  ;; Control, so the status above is a reading of the run rather than whatever
+  ;; the field always says.
+  (is eql :failed (getf (structured-node (structured-form 'failing-assertion) :test) :status)))
+
+(define-test a-stood-down-test-says-so-in-its-own-word
+  (is eql :skipped (getf (structured-node (structured-form 'bare-skip) :test) :status))
+  ;; Control. Nothing else in the report has to be consulted to reach the line
+  ;; above, so the control is a subject that was not stood down at all.
+  (is eql :passed (getf (structured-node (structured-form 'plain-body) :test) :status)))
+
+(define-test an-error-and-a-failed-assertion-are-told-apart
+  (let ((errored (structured-node (structured-form 'unhandled-error) :test))
+        (asserted (structured-node (structured-form 'failing-assertion) :comparison)))
+    ;; Both are failed, so the status by itself cannot separate them. What
+    ;; separates them is written down while the failure is happening.
+    (is eql :failed (getf errored :status))
+    (is eql :failed (getf asserted :status))
+    (is eql :error (getf errored :failure))
+    (is eql :assertion (getf asserted :failure))))
+
+(define-test an-error-keeps-its-type-and-its-text-apart
+  (let ((node (structured-node (structured-form 'unhandled-error) :test)))
+    (is equal "SIMPLE-ERROR" (getf node :condition))
+    (is equal "An expected error." (getf node :message)))
+  ;; Control. A failed assertion has no condition behind it, so the two fields
+  ;; are empty there and are not merely always filled in.
+  (let ((node (structured-node (structured-form 'failing-assertion) :comparison)))
+    (false (getf node :condition))
+    (false (getf node :message))))
+
+(define-test a-form-left-unresolved-is-neither-passed-nor-failed
+  (is eql :tentative (getf (structured-node (structured-form 'unresolved-form) :comparison) :status))
+  ;; Control, so the tentative above is the exit out of the form rather than
+  ;; anything the subject would have carried regardless.
+  (is eql :passed (getf (structured-node (structured-form 'resolved-form) :comparison) :status))
+  ;; The prose report draws tentative and unknown with one glyph. Here they are
+  ;; two counts and stay two.
+  (let ((counts (getf (structured-form 'unresolved-form) :counts)))
+    (is = 1 (getf counts :tentative))
+    (is = 0 (getf counts :unknown))))
+
+(define-test a-run-that-resolved-nothing-is-not-a-run-that-passed
+  (let ((package (or (find-package '#:zebra.test.nothing)
+                     (make-package '#:zebra.test.nothing :use ()))))
+    (unwind-protect
+         (let ((form (structured-form package)))
+           (is = 0 (getf form :resolved))
+           (false (getf form :results))
+           ;; The two runs agree on the status, which is the whole difficulty:
+           ;; only the count of what was resolved tells them apart.
+           (is eql :passed (getf form :status)))
+      (delete-package package)))
+  (let ((form (structured-form 'plain-body)))
+    (is = 1 (getf form :resolved))
+    (is eql :passed (getf form :status))))
+
+(define-test the-tallies-fold-no-status-into-another
+  ;; A single stood-down test leaves two skipped results: its own, and the result
+  ;; of the form that stood it down. The prose summary counts the test once, on
+  ;; purpose. The tallies here are over every result in the tree, unfiltered, so
+  ;; the two numbers differ and are meant to. The tree is what to read.
+  (let ((form (structured-form 'bare-skip)))
+    (is = 2 (getf (getf form :counts) :skipped))
+    (is = 1 (summary-count "Skipped:" (plain-summary 'bare-skip)))
+    (is = 2 (length (structured-nodes form)))))

@@ -26,6 +26,11 @@
    #:report-on
    #:largescale
    #:interactive)
+  ;; structured.lisp
+  (:export
+   #:*structured-report-version*
+   #:structured
+   #:structured-report-data)
   ;; result.lisp
   (:export
    #:*parent*
