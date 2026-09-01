@@ -13,6 +13,7 @@
    #:*ran*
    #:plain-body
    #:unhandled-error
+   #:failing-assertion
    #:bare-skip
    #:skip-with-body
    #:skip-on-matching
@@ -30,7 +31,11 @@
    #:suite-child-a
    #:suite-child-b
    #:suite-with-a-bare-skip-and-a-failing-child
-   #:failing-suite-child))
+   #:failing-suite-child
+   #:failing-dependency
+   #:stood-down-by-a-failing-dependency
+   #:passing-dependency
+   #:run-after-a-passing-dependency))
 
 (in-package #:zebra.test.subject)
 
@@ -49,6 +54,12 @@
   (push :before *ran*)
   (error "An expected error.")
   (push :after *ran*))
+
+;; A failure carried by a check inside the test. The check and the test above it
+;; both come out failed, so one failure leaves two results that could be counted for
+;; it.
+(define-test failing-assertion
+  (true NIL))
 
 (define-test bare-skip
   (push :before *ran*)
@@ -143,6 +154,25 @@
   :parent suite-with-a-bare-skip-and-a-failing-child
   (push :failing-child *ran*)
   (true NIL))
+
+;; The dependency STOOD-DOWN-BY-A-FAILING-DEPENDENCY waits on. It exists to fail.
+(define-test failing-dependency
+  (true NIL))
+
+;; A test stood down because the test it depends on failed. Its body never runs, so
+;; it records no result of its own and nothing below it carries the stand-down.
+(define-test stood-down-by-a-failing-dependency
+  :depends-on (failing-dependency)
+  (true T))
+
+;; Control pair for STOOD-DOWN-BY-A-FAILING-DEPENDENCY: a dependency that passes, so
+;; the dependent test runs its body and there is no stand-down to count.
+(define-test passing-dependency
+  (true T))
+
+(define-test run-after-a-passing-dependency
+  :depends-on (passing-dependency)
+  (true T))
 
 (defpackage #:zebra.test
   (:use #:cl #:zebra #:zebra.test.subject))
@@ -263,6 +293,44 @@ subject's output does not land in the surrounding run's."
   ;; Control, so the one above is a count of the skip rather than whatever the line
   ;; always says.
   (is = 0 (summary-count "Skipped:" (plain-summary 'plain-body))))
+
+;; A test that errors outright leaves nothing below it to carry the failure, so the
+;; test itself is all there is to count. The listing and the Failures section both
+;; report it, and the summary line has to agree with them.
+(define-test plain-summary-counts-a-test-that-errors
+  (is = 1 (summary-count "Failed:" (plain-summary 'unhandled-error))))
+
+;; One failure, two results that carry it. Counting the test as well as the check
+;; that failed inside it would report the one failure twice.
+(define-test plain-summary-counts-a-failure-through-a-check-once
+  (is = 1 (summary-count "Failed:" (plain-summary 'failing-assertion))))
+
+;; Control. Nothing goes wrong in this run, so a FAILED: count of 1 for a test that
+;; errors and for a test that fails through a check is a reading of those failures
+;; rather than a number the line prints whatever happened.
+(define-test control-plain-summary-counts-no-failures-in-a-passing-test
+  (is = 0 (summary-count "Failed:" (plain-summary 'plain-body))))
+
+;; A test stood down because its dependency failed never reaches its body, so it
+;; records no result of its own and nothing below it carries the stand-down. It is
+;; the only thing left to count, and the line has to say so.
+
+(define-test plain-summary-counts-a-test-stood-down-by-its-dependency
+  (is = 1 (summary-count "Skipped:" (plain-summary 'stood-down-by-a-failing-dependency)))
+  ;; Control. A dependency that passes leaves the body to run, so a stand-down count
+  ;; of 1 is a reading of the stand-down and not of the test having a dependency at
+  ;; all.
+  (is = 0 (summary-count "Skipped:" (plain-summary 'run-after-a-passing-dependency))))
+
+;; A test that asserts nothing and passes is counted in PASSED:. One reason decides
+;; every line of the summary: a result is counted when nothing below it already
+;; carries its status. The same reasoning that counts a test which errors before
+;; reaching a check counts a test which passes without ever making one, because in
+;; both cases the test is the only record of what happened. Counting the erroring
+;; test while dropping the passing one would be two rules wearing one name, and the
+;; PASSED: line would go on under-reporting.
+(define-test plain-summary-counts-a-passing-test-that-asserts-nothing
+  (is = 1 (summary-count "Passed:" (plain-summary 'plain-body))))
 
 (define-test a-failing-child-marks-a-skipped-test-failed
   (multiple-value-bind (markers report) (run-subject 'suite-with-a-bare-skip-and-a-failing-child)
